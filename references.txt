@@ -8,4 +8,7 @@ http://www.pitt.edu/~naraehan/python3/file_path_cwd.html
 https://stackoverflow.com/questions/17359698/how-to-get-the-current-working-directory-using-python-3
 https://stackoverflow.com/questions/3559559/how-to-delete-a-character-from-a-string-using-python
 https://stackoverflow.com/questions/4028904/how-to-get-the-home-directory-in-python
-
+https://www.tutorialspoint.com/python/os_listdir.htm
+https://stackoverflow.com/questions/22556449/print-a-list-of-space-separated-elements-in-python-3
+https://stackoverflow.com/questions/8113782/split-string-on-whitespace-in-python
+https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/

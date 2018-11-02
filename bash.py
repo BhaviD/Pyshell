@@ -6,6 +6,16 @@ import os
 import pwd
 import time
 import stat
+import re
+
+# bash commands
+EXIT="exit"
+CD="cd"
+LS="ls"
+PWD="pwd"
+TOUCH="touch"
+GREP="grep"
+
 
 def PromptPrint():
     dt = date.today()
@@ -23,30 +33,6 @@ def PromptPrint():
     print ("@ ", end="")
     utils.ColorTextPrint(utils.GREEN, "[{0}] ".format(cwd), True)
     print ("$ ", end="")
-
-
-# def RemovePrecedingSpaces(s):
-#     while (s != "" and s[0] == ' '):
-#         s = s[1:]
-#     return s
-#
-#
-# # Returns the command and args strings
-# def CommandExtract(s):
-#     s = RemovePrecedingSpaces(s)
-#
-#     i = 0
-#     while (i < len(s) and s[i] != ' '):
-#         i += 1
-#     if i == len(s):
-#         return s, ""
-#
-#     cmd = s[:i]
-#     args = s[i+1:]
-#
-#     args = RemovePrecedingSpaces(args)
-#
-#     return cmd, args
 
 
 def RemoveTrailingFwdSlashes(s):
@@ -73,7 +59,7 @@ def TildeToHomeConvert(s):
 
 def cd_run(args, prev_dir, curr_dir):
     if (args == ""):         # handling empty argument to "cd" command
-        args = home_dir
+        args = str(Path.home())
 
     elif (args[0] == '~'):   # handling "~/"
         args = TildeToHomeConvert(args)
@@ -88,66 +74,138 @@ def cd_run(args, prev_dir, curr_dir):
             os.chdir(args)
         except FileNotFoundError:
             utils.ErrorPrint("No such directory... please try again!!\n")
-   
+
+
+def ls_run(args):
+    if (args == ""):
+        args = os.getcwd()
+    elif (args[0] == '~'):
+        args = TildeToHomeConvert(args)
+
+    dir_content = os.listdir(args)
+    for c in sorted(dir_content):
+        if c[0] != '.':
+            print (c)
+
+def touch_run(args):
+    if (args == ""):
+        utils.ErrorPrint("touch: missing file operand\n")
+        return
+
+    # check whether the parent directories exist or not
+    p = (str)(Path(args).absolute())
+    basedir, f = os.path.split(p)
+    if not Path(basedir).exists():
+        utils.ErrorPrint("touch: cannot touch {0}: no such file or directory!!\n".format(args))
+        return
+
+    # check whether the file/directory exists or not
+    if Path(args).exists():
+        os.utime(args, None)
+    else:
+        with open(args, 'a'):        # new file is created
+            os.utime(args, None)
+
+
+def grep_file(pattern, filepath, flag_n, print_path = False):
+    with open(filepath, 'r') as search_file:
+        i = 0
+        for line in search_file:
+            i += 1
+            match = re.findall(r"{0}".format(pattern), line)
+            if match:
+                if print_path:
+                    if flag_n:
+                        print ("{0}:{1}:{2}".format(filepath, i, line), end="")
+                    else:
+                        print ("{0}:{1}".format(filepath, i), end="")
+                else:
+                    if flag_n:
+                        print ("{0}:{1}".format(i, line), end="")
+                    else:
+                        print ("{0}".format(line), end="")
+
+
+def grep_run(args):
+    args_list = args.split()
+    n = len(args_list)
+    flag_n = False
+    flag_r = False
+    pattern_found = False
+    pattern = ""
+
+    for a in args_list:
+        if flag_n and flag_r:
+            break
+
+        if (a[0] == '-'):
+            for i in range(1, len(a)):
+                if (a[i] == 'n'):
+                    flag_n = True
+                elif (a[i] == 'r'):
+                    flag_r = True
+
+        elif (pattern_found == False):
+            pattern = a
+            pattern_found = True
+
+
+    search_content = args_list[n-1]
+    if (search_content == "*"):
+        if flag_r:
+            grep_dir_recursive(pattern, os.getcwd(), flag_n)
+        else:
+            grep_dir_iterative(pattern, os.getcwd(), flag_n)
+
+    elif (os.path.isdir(search_content)):
+        if not flag_r:
+            utils.ErrorPrint("grep: {0}: Is a directory\n".format(search_content))
+            return
+        else:
+            grep_dir_recursive(pattern, search_content, flag_n)
+
+    elif (os.path.isfile(search_content)):
+        grep_file(pattern, search_content, flag_n)
+
+
 
 if __name__ == "__main__":
     utils.screen_clear()
     utils.BoldPrint("Pyshell Started...\n\n")
 
-    cmd=[""]
     curr_dir = os.getcwd()
     prev_dir = ""
-    home_dir = str(Path.home())
     while(True):
         PromptPrint()
         ip_cmd = input()
 
-        #cmd, args = CommandExtract(ip_cmd)
         cmd_list = ip_cmd.split()
         if (len(cmd_list) == 0):
             continue
 
-        if (cmd_list[0] == "exit"):
+        if (cmd_list[0] == EXIT):
             break
 
         cmd = cmd_list[0]
         del cmd_list[0]
         args = ' '.join([str(a) for a in cmd_list])
 
-        if (cmd == "cd"):
+        if (cmd == CD):
             cd_run(args, prev_dir, curr_dir)
             prev_dir = curr_dir
             curr_dir = os.getcwd()
 
-        elif (cmd == "ls"):
-            dir_content = os.listdir()
-            for c in sorted(dir_content):
-                if c[0] != '.':
-                    print (c)
+        elif (cmd == LS):
+            ls_run(args)
 
-        elif (cmd == "pwd"):
+        elif (cmd == PWD):
             print (curr_dir)
 
-        elif (cmd == "touch"):
-            if (args == ""):
-                utils.ErrorPrint("touch: missing file operand\n")
-                continue
+        elif (cmd == TOUCH):
+            touch_run(args)
 
-            # check whether the parent directories exist or not
-            p = (str)(Path(args).absolute())
-            basedir, f = os.path.split(p)
-            if not Path(basedir).exists():
-                utils.ErrorPrint("touch: cannot touch {0}: no such file or directory!!\n".format(args))
-                continue
-
-            # check whether the file/directory exists or not
-            if Path(args).exists():
-                os.utime(args, None)
-            else:
-                with open(args, 'a'):        # new file is created
-                    os.utime(args, None)
-
-        #elif (cmd == "grep"):
+        elif (cmd == GREP):
+            grep_run(args)
 
         else:
             utils.ErrorPrint ("{0}: command not found\n".format(cmd))
