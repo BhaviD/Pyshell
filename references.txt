@@ -1,0 +1,11 @@
+https://stackoverflow.com/questions/842059/is-there-a-portable-way-to-get-the-current-username-in-python
+https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+https://docs.python.org/3/library/datetime.html#datetime.date.today
+*https://www.cyberciti.biz/faq/howto-get-current-date-time-in-python/
+https://stackoverflow.com/questions/6169324/partition-string-in-python-and-get-value-of-last-segment-after-colon
+https://techibee.com/python/get-current-directory-using-python/2790
+http://www.pitt.edu/~naraehan/python3/file_path_cwd.html
+https://stackoverflow.com/questions/17359698/how-to-get-the-current-working-directory-using-python-3
+https://stackoverflow.com/questions/3559559/how-to-delete-a-character-from-a-string-using-python
+https://stackoverflow.com/questions/4028904/how-to-get-the-home-directory-in-python
+
