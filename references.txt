@@ -21,3 +21,9 @@ https://www.tutorialspoint.com/python/os_utime.htm
 https://www.tutorialspoint.com/python/os_stat.htm
 https://docs.python.org/2/library/stat.html
 https://docs.python.org/3/library/os.path.html#os.path.getmtime
+https://stackoverflow.com/questions/4690600/python-exception-message-capturing
+https://stackoverflow.com/questions/21533391/seeking-from-end-of-file-throwing-unsupported-exception
+https://www.tutorialspoint.com/python/file_seek.htm
+
+http://flask.pocoo.org/docs/1.0/patterns/flashing/
+https://getbootstrap.com/docs/3.3/getting-started/

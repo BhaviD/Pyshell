@@ -9,16 +9,20 @@ import stat
 import re
 
 # bash commands
-EXIT="exit"
-CD="cd"
-LS="ls"
-PWD="pwd"
-TOUCH="touch"
-GREP="grep"
+EXIT = "exit"
+CD = "cd"
+LS = "ls"
+PWD = "pwd"
+TOUCH = "touch"
+GREP = "grep"
+TAIL = "tail"
+HEAD = "head"
 
-SUCCESS=0
-FAILURE=-1
+SUCCESS = 0
+FAILURE = -1
 
+FILE_BEG = 0
+FILE_END = 2
 
 def PromptPrint():
     dt = date.today()
@@ -107,10 +111,6 @@ def cd_run(args, prev_dir, curr_dir):
         else:
             args = curr_dir
 
-    elif (args[0] == "\""):
-        args = args[1:]
-        args = args[:len(args) - 1]
-
     try:
         os.chdir(args)
     except Exception as err:
@@ -125,9 +125,6 @@ def ls_run(args):
         args = os.getcwd()
     elif (args[0] == '~'):
         args = TildeToHomeConvert(args)
-    elif (args[0] == "\""):
-        args = args[1:]
-        args = args[:len(args) - 1]
 
     try:
         dir_content = os.listdir(args)
@@ -148,9 +145,6 @@ def touch_run(args):
 
     if (args[0] == '~'):
         args = TildeToHomeConvert(args)
-    elif (args[0] == "\""):     # remove the double quotes
-        args = args[1:]
-        args = args[:len(args) - 1]
 
     # check whether the parent directories exist or not
     p = (str)(Path(args).absolute())
@@ -274,6 +268,118 @@ def grep_run(args):
             grep_file(pattern, search_dest, flag_n)
 
 
+
+def tail_run(args):
+    if (args == ""):
+        utils.ErrorPrint("Error: No arguments provided!!\n")
+        return
+
+    lines_reqd = 10
+    filename = args
+    i = 0
+    if args[0] == '-':
+        if args[1] != 'n':
+            utils.ErrorPrint("tail: {0}: flag not supported\n".format(args[0:2]))
+            return
+
+        i = 2
+        while (args[i] == ' '):
+            i += 1
+
+        j = i
+        while ('0' <= args[j] and args[j] <= '9'):
+            j += 1
+
+        try:
+            lines_reqd = (int)(args[i:j])
+            filename = args[j+1:]
+        except Exception as err:
+            utils.ErrorPrint("tail: Invalid args: {0}\n".format(args))
+            utils.ErrorPrint("tail: {0}\n".format(err))
+            return
+
+    try:
+        with open(filename, 'r') as f:
+            BLOCK_SIZE = 4096
+
+            f.seek(0, os.SEEK_END)
+            unprocessed_bytes = f.tell()
+            lines_remaining = lines_reqd
+            block_number = -1
+            blocks = [] # blocks of size BLOCK_SIZE, in reverse order starting
+                        # from the end of the file
+            while lines_remaining > 0 and unprocessed_bytes > 0:
+                if (unprocessed_bytes > BLOCK_SIZE):
+                    unprocessed_bytes -= BLOCK_SIZE
+                    f.seek(unprocessed_bytes)
+                    blocks.append(f.read(BLOCK_SIZE))
+                else:
+                    unprocessed_bytes -= BLOCK_SIZE
+                    f.seek(0, FILE_BEG)
+                    blocks.append(f.read(unprocessed_bytes))
+
+                lines_found = blocks[-1].count('\n')
+                lines_remaining -= lines_found
+                unprocessed_bytes -= BLOCK_SIZE
+                block_number -= 1
+
+            processed_text = ''.join(reversed(blocks))
+            print ('\n'.join(processed_text.splitlines()[-lines_reqd:]))
+
+    except Exception as err:
+        utils.ErrorPrint("tail: {0}: {1}\n".format(filename, err))
+
+
+
+def head_run(args):
+    if (args == ""):
+        utils.ErrorPrint("Error: No arguments provided!!\n")
+        return
+
+    lines_reqd = 10
+    filename = args
+    i = 0
+    if args[0] == '-':
+        if args[1] != 'n':
+            utils.ErrorPrint("tail: {0}: flag not supported\n".format(args[0:2]))
+            return
+
+        i = 2
+        while (args[i] == ' '):
+            i += 1
+
+        j = i
+        while ('0' <= args[j] and args[j] <= '9'):
+            j += 1
+
+        try:
+            lines_reqd = (int)(args[i:j])
+            filename = args[j+1:]
+        except Exception as err:
+            utils.ErrorPrint("tail: Invalid args: {0}\n".format(args))
+            utils.ErrorPrint("tail: {0}\n".format(err))
+            return
+
+    try:
+        with open(filename, 'r') as f:
+            try:
+                while (lines_reqd > 0):
+                    line = next(f)
+                    print (line, end="")
+                    lines_reqd -= 1
+
+            except StopIteration:
+                pass
+
+    except Exception as err:
+        utils.ErrorPrint("tail: {0}: {1}\n".format(filename, err))
+
+
+
+
+
+
+
 if __name__ == "__main__":
     utils.screen_clear()
     utils.BoldPrint("Pyshell Started...\n\n")
@@ -298,6 +404,10 @@ if __name__ == "__main__":
         #del cmd_list[0]
         #args = ' '.join([str(a) for a in cmd_list])
 
+        if (args != "" and args[0] == "\""):
+            args = args[1:]
+            args = args[:len(args) - 1]
+
         if (cmd == CD):
             if cd_run(args, prev_dir, curr_dir) == SUCCESS:
                 prev_dir = curr_dir
@@ -314,6 +424,12 @@ if __name__ == "__main__":
 
         elif (cmd == GREP):
             grep_run(args)
+
+        elif (cmd == TAIL):
+            tail_run(args)
+
+        elif (cmd == HEAD):
+            head_run(args)
 
         else:
             utils.ErrorPrint ("'{0}': command not found\n".format(cmd))
