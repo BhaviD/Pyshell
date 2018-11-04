@@ -17,6 +17,8 @@ TOUCH = "touch"
 GREP = "grep"
 TAIL = "tail"
 HEAD = "head"
+ECHO = "echo"
+CAT = "cat"
 
 SUCCESS = 0
 FAILURE = -1
@@ -127,6 +129,14 @@ def ls_run(args):
         args = TildeToHomeConvert(args)
 
     try:
+        if not Path(args).exists():
+            utils.ErrorPrint("ls: cannot access {0}: no such file or directory".format(args))
+            return
+
+        if (os.path.isfile(args)):
+            print (args)
+            return
+
         dir_content = os.listdir(args)
         for c in sorted(dir_content):
             if c[0] != '.':
@@ -200,7 +210,6 @@ def grep_dir_iterative(pattern, dirpath, flag_n):
 
 def grep_run(args):
     flag_n = False
-    flag_r = False
     pattern_found = False
     pattern = ""
     search_dest = ""
@@ -208,13 +217,13 @@ def grep_run(args):
     i = 0
     while (i < len(args)):
         if(args[i] == '-'):
+            i += 1
+            if args[i] != 'n':
+                utils.ErrorPrint("tail: {0}: flag not supported\n".format(args[i:i+2]))
+                return
+
+            flag_n = True
             i += 1                      # get to next character
-            while(args[i] != ' '):
-                if (args[i] == 'r'):
-                    flag_r = True
-                elif (args[i] == 'n'):
-                    flag_n = True
-                i += 1
 
         elif(args[i] == ' '):           # ignore spaces
             i += 1
@@ -231,7 +240,7 @@ def grep_run(args):
 
                 i += 1
             else:
-                while(args[i] != ' '):
+                while(i < len(args) and args[i] != ' '):
                     pattern += str(args[i])
                     i += 1
 
@@ -246,10 +255,11 @@ def grep_run(args):
                 search_dest = search_dest[:len(search_dest) - 1]
 
 
+    if (pattern == "" or search_dest == ""):
+        utils.ErrorPrint("Usage: grep [OPTION]... PATTERN [FILE]...\n")
+        return
+
     if (search_dest == "*"):
-        #if flag_r:
-        #    grep_dir_recursive(pattern, os.getcwd(), flag_n)
-        #else:
         grep_dir_iterative(pattern, ".", flag_n)
 
     elif (not Path(search_dest).exists()):
@@ -258,11 +268,8 @@ def grep_run(args):
 
     else: 
         if(os.path.isdir(search_dest)):
-            #if not flag_r:
             utils.ErrorPrint("grep: '{0}': Is a directory\n".format(search_dest))
             return
-            #else:
-            #    grep_dir_recursive(pattern, search_dest, flag_n)
 
         elif (os.path.isfile(search_dest)):
             grep_file(pattern, search_dest, flag_n)
@@ -375,9 +382,166 @@ def head_run(args):
         utils.ErrorPrint("tail: {0}: {1}\n".format(filename, err))
 
 
+def char_set_get(sym):
+    if (sym == "[a-z]" or sym == "\"[a-z]\"" or
+        sym == "[:lower:]" or sym == "\"[:lower:]\""):
+        return "abcdefghijklmnopqrstuvwxyz"
+
+    if (sym == "[A-Z]" or sym == "\"[A-Z]\"" or
+        sym == "[:upper:]" or sym == "\"[:upper:]\""):
+        return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    if (sym == "[:space:]" or sym == "\"[:space:]\""):
+        return ' '
+
+    if (sym == "'\\t'" or sym == "\"\\t\""):
+        return '\t'
+    
+    if (sym == "[:digit:]" or sym == "\"[:digit:]\""):
+        return "0123456789"
+
+    return sym
+
+def tr_run(line, args):
+    args_list = args.split()
+    intab = ""          # in table
+    outtab = ""         # out table
+
+    if (len(args_list) < 2):
+        utils.ErrorPrint("tr: arguments missing\n")
+        return
+
+    if (args_list[0][0] == '-'):        # a flag
+        if (args_list[0][1] != 'd'):
+            utils.ErrorPrint("tr: {0}: flag not supported".format(args_list[0][0:2]))
+            return
+
+        intab = char_set_get(args_list[1])
+        line = line.translate(str.maketrans('', '', intab))
+    else:
+        intab = char_set_get(args_list[0])
+        outtab = char_set_get(args_list[1])
+        line = line.translate(str.maketrans(intab, outtab))
+        
+    print (line, end="")
 
 
+def echo_run(args):
+    if (args == ""):
+        utils.ErrorPrint("echo: No arguments provided\n")
+        return
 
+    text = ""
+    i = 0
+    if (args[i] == '\''):       # text is enclosed in single quotes ('<text>')
+        i += 1
+        while(args[i] != '\'' or args[i-1] == '\\'):    # the text may contain ' in itself
+            if(args[i] != '\\'):
+                text += str(args[i])
+
+            i += 1
+
+        i += 1
+    else:
+        while(i < len(args) and args[i] != '|'):
+            text += str(args[i])
+            i += 1
+
+        text_list = text.split()
+        text = ' '.join(text_list)
+
+    while (i < len(args) and args[i] != '|'):
+        i += 1
+
+    if (i == len(args)):
+        print (text)
+    else:
+        i += 1
+        while (i < len(args) and args[i] == ' '):
+            i += 1
+
+        if (i == len(args) or i + 1 == len(args) or i + 2 == len(args)):
+            utils.ErrorPrint("echo: incomplete command\n")
+            return
+
+        cmd = ""
+        while (i < len(args) and args[i] != ' '):
+            cmd += (str)(args[i])
+            i += 1
+
+        if (i == len(args)):
+            utils.ErrorPrint("echo: invalid command\n")
+            return
+
+        while(i < len(args) and args[i] == ' '):
+            i += 1
+
+        if (cmd == "tr"):
+            tr_run (text, args[i:])
+
+        elif (cmd == "sed"):
+            sed_run (text, args[i:])
+
+        else:
+            utils.ErrorPrint("echo: invalid command\n")
+            return
+
+
+def cat_run(args):
+    if (args == ""):
+        utils.ErrorPrint("cat: No arguments provided\n")
+        return
+
+    i = 0
+    filename = ""
+    to_stdout = False
+
+    if (args[i] == '\''):       # filename is enclosed in single quotes ('<text>')
+        i += 1
+        while(args[i] != '\'' or args[i-1] == '\\'):    # the text may contain ' in itself
+            if(args[i] != '\\'):
+                filename += str(args[i])
+
+            i += 1
+
+        i += 1
+    else:
+        while(i < len(args) and args[i] != ' '):
+            filename += str(args[i])
+            i += 1
+
+    while (i < len(args) and args[i] != '|'):
+        i += 1
+
+    if (i == len(args)):
+        to_stdout = True
+    else:
+        i += 1
+        cmd, args = CommandExtract(args[i:])
+
+    if not Path(filename).exists():
+        utils.ErrorPrint("cat: {0}: no such file or directory".format(args))
+        return
+
+    if (os.path.isdir(filename)):
+        print("cat: {0}: Is a directory".format(args))
+        return
+
+    try:
+        with open(filename, 'r') as f:
+            for line in f:
+                if(to_stdout):
+                    print (line, end="")
+                elif (cmd == "tr"):
+                    tr_run(line, args)
+                elif (cmd == "sed"):
+                    sed_run(line, args)
+                else:
+                    utils.ErrorPrint("cat: Invalid command\n")
+                    break
+    except Exception as err:
+        utils.ErrorPrint("cat: {0}\n".format(err))
+    
 
 
 if __name__ == "__main__":
@@ -391,18 +555,11 @@ if __name__ == "__main__":
         ip_cmd = input()
 
         cmd, args = CommandExtract(ip_cmd)
-        #cmd_list = ip_cmd.split()
-        #if (len(cmd_list) == 0):
         if (cmd == ""):
             continue
 
-        #if (cmd_list[0] == EXIT):
         if (cmd == EXIT):
             break
-
-        #cmd = cmd_list[0]
-        #del cmd_list[0]
-        #args = ' '.join([str(a) for a in cmd_list])
 
         if (args != "" and args[0] == "\""):
             args = args[1:]
@@ -430,6 +587,12 @@ if __name__ == "__main__":
 
         elif (cmd == HEAD):
             head_run(args)
+
+        elif (cmd == ECHO):
+            echo_run(args)
+
+        elif (cmd == CAT):
+            cat_run(args)
 
         else:
             utils.ErrorPrint ("'{0}': command not found\n".format(cmd))
