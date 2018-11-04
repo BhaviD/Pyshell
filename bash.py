@@ -19,6 +19,7 @@ TAIL = "tail"
 HEAD = "head"
 ECHO = "echo"
 CAT = "cat"
+SED = "sed"
 
 SUCCESS = 0
 FAILURE = -1
@@ -402,6 +403,7 @@ def char_set_get(sym):
 
     return sym
 
+
 def tr_run(line, args):
     args_list = args.split()
     intab = ""          # in table
@@ -424,6 +426,53 @@ def tr_run(line, args):
         line = line.translate(str.maketrans(intab, outtab))
         
     print (line, end="")
+
+
+
+def sed_run_on_line(line, args):
+    sed_args = ""
+    i = 0
+    if (args[i] == '\''):       # filename is enclosed in single quotes ('<text>')
+        i += 1
+        while(i < len(args) and (args[i] != '\'' or args[i-1] == '\\')):    # the text may contain ' in itself
+            if(args[i] != '\\'):
+                sed_args += str(args[i])
+
+            i += 1
+
+        i += 1
+
+    args_list = sed_args.split('/');
+    if (args_list[0] != "s"):
+        utils.ErroPrint("sed: {0}: command not supported\n".format(args_list[0]))
+        return
+
+    n = len(args_list)
+    if (n == 4 and (args_list[3] == "1" or args_list[3] == "")):
+        line = re.sub(r"{0}".format(args_list[1]), r"{0}".format(args_list[2]), line, 1)
+    elif (n == 4 and args_list[3] == "g"):
+        line = re.sub(r"{0}".format(args_list[1]), r"{0}".format(args_list[2]), line)
+    else:
+        utils.ErrorPrint("sed: command not supported\n")
+        return False
+
+    print (line, end="")
+    return True
+
+
+
+def sed_run(args):
+    sed_args_list = args.split('\'')
+
+
+    if (len(sed_args_list) < 3):
+        utils.ErrorPrint("sed: invalid command\n")
+        return
+
+    filename = RemovePrecedingSpaces(sed_args_list[2])
+    cat_args = "{0} | sed '{1}'".format(filename, sed_args_list[1])
+    cat_run(cat_args)
+
 
 
 def echo_run(args):
@@ -457,34 +506,18 @@ def echo_run(args):
         print (text)
     else:
         i += 1
-        while (i < len(args) and args[i] == ' '):
-            i += 1
-
-        if (i == len(args) or i + 1 == len(args) or i + 2 == len(args)):
-            utils.ErrorPrint("echo: incomplete command\n")
-            return
-
-        cmd = ""
-        while (i < len(args) and args[i] != ' '):
-            cmd += (str)(args[i])
-            i += 1
-
-        if (i == len(args)):
-            utils.ErrorPrint("echo: invalid command\n")
-            return
-
-        while(i < len(args) and args[i] == ' '):
-            i += 1
+        cmd, args = CommandExtract(args[i:])
 
         if (cmd == "tr"):
-            tr_run (text, args[i:])
+            tr_run (text, args)
 
         elif (cmd == "sed"):
-            sed_run (text, args[i:])
+            sed_run_on_line (text, args)
 
         else:
             utils.ErrorPrint("echo: invalid command\n")
             return
+
 
 
 def cat_run(args):
@@ -520,11 +553,11 @@ def cat_run(args):
         cmd, args = CommandExtract(args[i:])
 
     if not Path(filename).exists():
-        utils.ErrorPrint("cat: {0}: no such file or directory".format(args))
+        utils.ErrorPrint("{0}: no such file or directory\n".format(filename))
         return
 
     if (os.path.isdir(filename)):
-        print("cat: {0}: Is a directory".format(args))
+        print("{0}: Is a directory\n".format(filename))
         return
 
     try:
@@ -535,12 +568,12 @@ def cat_run(args):
                 elif (cmd == "tr"):
                     tr_run(line, args)
                 elif (cmd == "sed"):
-                    sed_run(line, args)
+                    sed_run_on_line(line, args)
                 else:
                     utils.ErrorPrint("cat: Invalid command\n")
                     break
     except Exception as err:
-        utils.ErrorPrint("cat: {0}\n".format(err))
+        utils.ErrorPrint("{0}\n".format(err))
     
 
 
@@ -593,6 +626,9 @@ if __name__ == "__main__":
 
         elif (cmd == CAT):
             cat_run(args)
+
+        elif (cmd == SED):
+            sed_run(args)
 
         else:
             utils.ErrorPrint ("'{0}': command not found\n".format(cmd))
