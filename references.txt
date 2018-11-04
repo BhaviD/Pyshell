@@ -12,3 +12,12 @@ https://www.tutorialspoint.com/python/os_listdir.htm
 https://stackoverflow.com/questions/22556449/print-a-list-of-space-separated-elements-in-python-3
 https://stackoverflow.com/questions/8113782/split-string-on-whitespace-in-python
 https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
+https://developers.google.com/edu/python/regular-expressions
+https://stackoverflow.com/questions/26659142/cat-grep-and-cut-translated-to-python
+https://stackoverflow.com/questions/42513056/how-to-get-absolute-path-of-a-pathlib-path-object
+https://stackoverflow.com/questions/12654772/create-empty-file-using-python/12654798
+https://www.guru99.com/python-check-if-file-exists.html
+https://www.tutorialspoint.com/python/os_utime.htm
+https://www.tutorialspoint.com/python/os_stat.htm
+https://docs.python.org/2/library/stat.html
+https://docs.python.org/3/library/os.path.html#os.path.getmtime
