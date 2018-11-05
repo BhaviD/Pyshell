@@ -7,6 +7,7 @@ import pwd
 import time
 import stat
 import re
+import difflib
 
 # bash commands
 EXIT = "exit"
@@ -20,6 +21,7 @@ HEAD = "head"
 ECHO = "echo"
 CAT = "cat"
 SED = "sed"
+DIFF = "diff"
 
 SUCCESS = 0
 FAILURE = -1
@@ -98,6 +100,26 @@ def TildeToHomeConvert(s):
     s = str(Path.home()) + '/' + s
     s = RemoveTrailingFwdSlashes(s)
     return s
+
+
+def PatternGet(s):
+    i = 0
+    pattern = ""
+    if (s[i] == '\''):       # pattern is enclosed in single quotes ('<pattern>')
+        i += 1
+        while(s[i] != '\'' or s[i-1] == '\\'):    # the pattern may contain ' in itself
+            if(s[i] != '\\'):
+                pattern += str(s[i])
+
+            i += 1
+
+        i += 1
+    else:
+        while(i < len(s) and s[i] != ' '):
+            pattern += str(s[i])
+            i += 1
+
+    return pattern, i
 
 
 def cd_run(args, prev_dir, curr_dir):
@@ -574,7 +596,46 @@ def cat_run(args):
                     break
     except Exception as err:
         utils.ErrorPrint("{0}\n".format(err))
+
+
+
+def diff_run(args):
+    if (args == ""):
+        utils.ErrorPrint("diff: No arguments provided\n")
+        return
+
+    file1, i = PatternGet(args)
+    args = RemovePrecedingSpaces(args[i:])
     
+    if (args == ""):
+        utils.ErrorPrint("diff: 2nd argument missing\n")
+        return
+
+    file2, i = PatternGet(args)
+
+    if not Path(file1).exists():
+        utils.ErrorPrint("diff: {0}: no such file or directory\n".format(file1))
+        return
+
+    if not Path(file2).exists():
+        utils.ErrorPrint("diff: {0}: no such file or directory\n".format(file2))
+        return
+
+    if (os.path.isdir(file1)):
+        print("{0}: Is a directory\n".format(file1))
+        return
+
+    if (os.path.isdir(file2)):
+        print("{0}: Is a directory\n".format(file2))
+        return
+
+    with open(file1, 'r') as f1:
+        with open(file2, 'r') as f2:
+            diff = difflib.unified_diff(f1.readlines(), f2.readlines())
+            for line in diff:
+                print(line, end = "")
+
+
 
 
 if __name__ == "__main__":
@@ -629,6 +690,9 @@ if __name__ == "__main__":
 
         elif (cmd == SED):
             sed_run(args)
+
+        elif (cmd == DIFF):
+            diff_run(args)
 
         else:
             utils.ErrorPrint ("'{0}': command not found\n".format(cmd))
