@@ -24,6 +24,13 @@ https://docs.python.org/3/library/os.path.html#os.path.getmtime
 https://stackoverflow.com/questions/4690600/python-exception-message-capturing
 https://stackoverflow.com/questions/21533391/seeking-from-end-of-file-throwing-unsupported-exception
 https://www.tutorialspoint.com/python/file_seek.htm
-
 http://flask.pocoo.org/docs/1.0/patterns/flashing/
 https://getbootstrap.com/docs/3.3/getting-started/
+https://stackoverflow.com/questions/50796551/meaning-of-output-of-difflib-unified-diff
+https://stackoverflow.com/questions/15864641/python-difflib-comparing-files
+https://www.geeksforgeeks.org/diff-command-linux-examples/
+https://stackoverflow.com/questions/555705/character-translation-using-python-like-the-tr-command
+https://www.tutorialspoint.com/python/string_translate.htm
+https://stackoverflow.com/questions/16707090/re-sub-in-python-3-3
+https://docs.python.org/3.1/library/re.html
+https://www.geeksforgeeks.org/tr-command-unixlinux-examples/
